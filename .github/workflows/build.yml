@@ -50,43 +50,42 @@ jobs:
           path: build/qt-webcam-linux.zip
 
   windows-build:
-    name: Build Windows
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-          fetch-tags: true
+  name: Build Windows
+  runs-on: windows-latest
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        fetch-tags: true
 
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: 6.9
-          modules: qtcharts qtmultimedia qtshadertools
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: 6.9
+        modules: qtcharts qtmultimedia qtshadertools
 
-      - name: Create build directory
-        run: mkdir build
+    - name: Create build directory
+      run: mkdir build
 
-      - name: Build with MSVC
-        shell: pwsh
-        working-directory: build
-        run: |
-          # Initialize MSVC x64 environment
-          & "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+    - name: Build with MSVC
+      shell: pwsh
+      working-directory: build
+      run: |
+        # Initialize MSVC environment
+        & "${env:VSINSTALLDIR}VC\Auxiliary\Build\vcvarsall.bat" x64
 
-          # Build project
-          qmake -r ../qt-webcam.pro
-          nmake
+        # Build project
+        qmake -r ../qt-webcam.pro
+        nmake
 
-      - name: Package build
-        shell: pwsh
-        run: Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
+    - name: Package build
+      shell: pwsh
+      run: Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: qt-webcam-windows
-          path: qt-webcam-windows.zip
+    - uses: actions/upload-artifact@v4
+      with:
+        name: qt-webcam-windows
+        path: qt-webcam-windows.zip
 
   release:
     name: Create GitHub Release
@@ -111,6 +110,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          files: release_artifacts/**/* 
+          files: release_artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
