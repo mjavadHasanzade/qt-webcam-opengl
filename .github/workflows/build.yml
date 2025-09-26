@@ -40,7 +40,7 @@ jobs:
       - name: Build
         working-directory: build
         run: |
-          qmake -r ../QtWidgetOpenGl.pro
+          qmake -r ../qt-webcam.pro
           make -j$(nproc)
 
       - name: Package build
