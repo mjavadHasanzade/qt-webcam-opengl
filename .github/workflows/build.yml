@@ -13,14 +13,6 @@ on:
       - "master"
       - "continuous-integration"
 
-defaults:
-  run:
-    shell: bash
-
-env:
-  SOURCE_DIR: ${{ github.workspace }}
-  ARTIFACT: qt-planets-build.zip
-
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -33,37 +25,29 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Workspace
-        run: |
-          echo "Workspace: ${{ github.workspace }}"
-          echo "Runner temp: ${{ runner.temp }}"
-
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: 6.7   # pick Qt 6.7.x
-          modules: qtcharts qtmultimedia qttools qtshadertools
+          version: 6.7
+          modules: qtcharts qtmultimedia qtshadertools
 
       - name: Install 7zip
         run: sudo apt-get update && sudo apt-get install -y p7zip-full
 
       - name: Create build directory
-        run: mkdir -p ${{ env.SOURCE_DIR }}/build
+        run: mkdir build
 
       - name: Build
-        working-directory: ${{ env.SOURCE_DIR }}/build
+        working-directory: build
         run: |
-          qmake -r ${{ env.SOURCE_DIR }}/QtWidgetOpenGl.pro
+          qmake -r ../QtWidgetOpenGl.pro
           make -j$(nproc)
 
       - name: Package build
-        working-directory: ${{ env.SOURCE_DIR }}
-        run: |
-          7z a ${{ env.ARTIFACT }} build/* -r
-          ls -lh
+        run: 7z a qt-planets-build.zip build/* -r
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT }}
-          path: ${{ env.SOURCE_DIR }}/${{ env.ARTIFACT }}
+          name: qt-planets-build
+          path: qt-planets-build.zip
