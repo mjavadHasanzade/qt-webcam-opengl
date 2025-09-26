@@ -7,6 +7,7 @@
 #include <QVideoSink>
 #include <QLabel>
 #include "cameracapture.h"
+#include "video_glwidget.h"
 #include <QPushButton>
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -39,6 +40,15 @@ private:
     QHBoxLayout *previewsLayout = nullptr;
     QScrollArea *previewsScrollArea = nullptr;
     QVector<VideoGLWidget*> previewWidgets;
+
+    // UI enhancements
+    QToolBar *mainToolBar = nullptr;
+    QAction *captureAction = nullptr;
+    QAction *quitAction = nullptr;
+
+    void applyElegantStyle();
+    void setupToolBar();
+    QString filterNameByType(VideoGLWidget::FilterType type) const;
 
 private slots:
     void onCaptureButtonClicked();

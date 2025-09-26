@@ -16,12 +16,21 @@
 #include <QScrollArea>
 #include <QEvent>
 #include <QMouseEvent>
+#include <QToolBar>
+#include <QAction>
+#include <QStyle>
+#include <QStatusBar>
+#include <QShortcut>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    applyElegantStyle();
+
+    setWindowTitle("QT Webcam");
 
     videoWidget = new VideoGLWidget(this);
 
@@ -34,7 +43,6 @@ MainWindow::MainWindow(QWidget *parent)
         filtersComboBox->hide();
     }
 
-    // Build a vertical stack inside the left video area: main video on top, previews at bottom
     mainColumnLayout = new QVBoxLayout();
     mainColumnLayout->setContentsMargins(0, 0, 0, 0);
     mainColumnLayout->setSpacing(6);
@@ -51,11 +59,14 @@ MainWindow::MainWindow(QWidget *parent)
     previewsScrollArea->setWidgetResizable(true);
     previewsScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     previewsScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    previewsScrollArea->setFixedHeight(120);
+    previewsScrollArea->setFixedHeight(130);
     previewsScrollArea->setWidget(previewsContainer);
 
     mainColumnLayout->addWidget(previewsScrollArea, 0);
     ui->videoLayout->addLayout(mainColumnLayout);
+
+    setupToolBar();
+    statusBar()->showMessage("Ready");
 
     cameraCapture = new CameraCapture(this);
     connect(cameraCapture, &CameraCapture::frameReady, videoWidget, &VideoGLWidget::setFrame);
@@ -123,6 +134,7 @@ void MainWindow::onCaptureButtonClicked()
 {
     if (cameraCapture)
         cameraCapture->captureImage();
+    if (statusBar()) statusBar()->showMessage("Captured", 1500);
 }
 
 void MainWindow::onImageCaptured(const QImage &image)
@@ -181,6 +193,9 @@ void MainWindow::onFilterChanged(int index)
         videoWidget->setFilterType(VideoGLWidget::Sharpen);
         break;
     }
+    if (statusBar()) {
+        statusBar()->showMessage(QStringLiteral("Filter: ") + filterNameByType(videoWidget->currentFilterType()), 2000);
+    }
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
@@ -198,5 +213,71 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
         }
     }
     return QMainWindow::eventFilter(watched, event);
+}
+
+void MainWindow::applyElegantStyle()
+{
+    const QString style = R"( 
+        QMainWindow { background-color: #121212; }
+        QWidget { color: #EDEDED; font-size: 11pt; }
+        QStatusBar { background: #1E1E1E; color: #CFCFCF; }
+        QToolBar { background: #1A1A1A; spacing: 6px; border: none; padding: 4px; }
+        QToolButton { color: #EDEDED; padding: 6px 10px; border-radius: 6px; }
+        QToolButton:hover { background: rgba(255,255,255,0.06); }
+        QScrollArea { background: transparent; border: none; }
+        QLabel { color: #CFCFCF; }
+        QPushButton#captureButton { 
+            border: 2px solid #FFFFFF; 
+            border-radius: 25px; 
+            min-width: 50px; min-height: 50px; 
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.6);
+        }
+        QPushButton#captureButton:hover { filter: brightness(1.1); }
+        QPushButton#captureButton:pressed { transform: translateY(1px); }
+    )";
+    setStyleSheet(style);
+}
+
+void MainWindow::setupToolBar()
+{
+    if (!mainToolBar) {
+        mainToolBar = new QToolBar(tr("Toolbar"), this);
+        mainToolBar->setMovable(false);
+        addToolBar(Qt::TopToolBarArea, mainToolBar);
+    }
+
+    // Capture action
+    captureAction = new QAction(tr("Capture"), this);
+    captureAction->setShortcut(QKeySequence(Qt::Key_Space));
+    captureAction->setToolTip(tr("Capture snapshot (Space)"));
+    connect(captureAction, &QAction::triggered, this, &MainWindow::onCaptureButtonClicked);
+
+    // Quit action
+    quitAction = new QAction(tr("Quit"), this);
+    quitAction->setShortcut(QKeySequence::Quit);
+    connect(quitAction, &QAction::triggered, this, &QWidget::close);
+
+    mainToolBar->addAction(captureAction);
+    mainToolBar->addSeparator();
+    mainToolBar->addAction(quitAction);
+}
+
+QString MainWindow::filterNameByType(VideoGLWidget::FilterType type) const
+{
+    switch (type) {
+    case VideoGLWidget::None: return QStringLiteral("None");
+    case VideoGLWidget::Grayscale: return QStringLiteral("Grayscale");
+    case VideoGLWidget::Sepia: return QStringLiteral("Sepia");
+    case VideoGLWidget::Invert: return QStringLiteral("Invert");
+    case VideoGLWidget::Blur: return QStringLiteral("Blur");
+    case VideoGLWidget::Edge: return QStringLiteral("Edge");
+    case VideoGLWidget::Move: return QStringLiteral("Move");
+    case VideoGLWidget::Cool: return QStringLiteral("Cool");
+    case VideoGLWidget::Emboss: return QStringLiteral("Emboss");
+    case VideoGLWidget::Posterize: return QStringLiteral("Posterize");
+    case VideoGLWidget::Warm: return QStringLiteral("Warm");
+    case VideoGLWidget::Sharpen: return QStringLiteral("Sharpen");
+    }
+    return QStringLiteral("Unknown");
 }
 
