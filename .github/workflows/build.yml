@@ -108,6 +108,17 @@ jobs:
       - name: Package build
         run: 7z a ${{ env.ARTIFACT_ZIP }} build/* -r
 
+      - name: Create desktop file for AppImage
+        run: |
+          cat > build/qt-webcam.desktop <<EOL
+          [Desktop Entry]
+          Name=Qt Webcam
+          Exec=qt-webcam
+          Icon=qt-webcam
+          Type=Application
+          Categories=Utility;
+          EOL
+
       - name: Download linuxdeployqt
         run: |
           wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
