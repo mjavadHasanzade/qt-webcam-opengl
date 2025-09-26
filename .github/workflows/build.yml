@@ -134,13 +134,13 @@ jobs:
       - name: Upload zipped build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qt-planets-build-linux-zip
+          name: qt-webcam-build-linux-zip
           path: ${{ env.ARTIFACT_ZIP }}
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qt-planets-build-linux-appimage
+          name: qt-webcam-build-linux-linux-appimage
           path: build/qt-webcam-x86_64.AppImage
 
   create-release:
