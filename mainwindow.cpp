@@ -128,7 +128,15 @@ void MainWindow::onCaptureButtonClicked()
 void MainWindow::onImageCaptured(const QImage &image)
 {
     if (image.isNull()) return;
-    CaptureDialog *dialog = new CaptureDialog(image, this);
+    QImage toShow = image;
+    if (videoWidget && videoWidget->currentFilterType() != VideoGLWidget::None) {
+        // Grab the filtered framebuffer to reflect current filter in the capture
+        QImage grabbed = videoWidget->grabFramebuffer();
+        if (!grabbed.isNull()) {
+            toShow = grabbed.convertToFormat(QImage::Format_ARGB32);
+        }
+    }
+    CaptureDialog *dialog = new CaptureDialog(toShow, this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->show();
 }

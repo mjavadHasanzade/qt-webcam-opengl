@@ -30,6 +30,7 @@ public:
     explicit VideoGLWidget(QWidget *parent = nullptr);
     void setFrame(const QImage &frame);
     void setFilterType(FilterType type);
+    FilterType currentFilterType() const { return filterType; }
 
 protected:
     void initializeGL() override;
