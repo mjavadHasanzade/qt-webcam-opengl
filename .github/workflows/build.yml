@@ -1,0 +1,155 @@
+name: Windows + Linux Release
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'continuous-integration'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - 'master'
+      - 'continuous-integration'
+
+env:
+  QT_VERSION: 6.9
+  ARTIFACT_WIN: qt-planets-build-windows.zip
+  ARTIFACT_LIN: qt-planets-build-linux.zip
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          dir: ${{ runner.temp }}
+          modules: qtcharts qt3d qtmultimedia
+          setup-python: false
+
+      - name: Download JOM
+        uses: suisei-cn/actions-download-file@v1
+        with:
+          url: http://download.qt.io/official_releases/jom/jom.zip
+          target: ${{ runner.temp }}\
+
+      - name: Unzip JOM
+        run: 7z x ${{ runner.temp }}\jom.zip -ojom
+        working-directory: ${{ runner.temp }}
+
+      - name: Create build directory
+        run: mkdir ${{ runner.temp }}\build
+
+      - name: Set up Visual Studio shell
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Build
+        working-directory: ${{ runner.temp }}\build
+        run: |
+          qmake -r ${{ github.workspace }}\qt-webcam.pro
+          ${{ runner.temp }}\jom\jom -j2
+          cd release
+          windeployqt --qmldir ${{ github.workspace }} qt-webcam.exe --pdb --release --compiler-runtime
+          copy C:\Windows\System32\concrt140.dll .
+          copy C:\Windows\System32\vccorlib140.dll .
+          copy C:\Windows\System32\msvcp140.dll .
+          copy C:\Windows\System32\vcruntime140.dll .
+
+      - name: Zip build
+        run: 7z a ${{ runner.temp }}\${{ env.ARTIFACT_WIN }} ${{ runner.temp }}\build\* -r
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_WIN }}
+          path: ${{ runner.temp }}\${{ env.ARTIFACT_WIN }}
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtcharts qtmultimedia qtshadertools
+
+      - name: Install 7zip
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full
+
+      - name: Create build directory
+        run: mkdir build
+
+      - name: Build
+        working-directory: build
+        run: |
+          qmake -r ../qt-webcam.pro
+          make -j$(nproc)
+
+      - name: Package build
+        run: 7z a ${{ runner.temp }}/${{ env.ARTIFACT_LIN }} build/* -r
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_LIN }}
+          path: ${{ runner.temp }}/${{ env.ARTIFACT_LIN }}
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-22.04
+    needs: [build-windows, build-linux]
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_WIN }}
+          path: ./release_artifacts
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_LIN }}
+          path: ./release_artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./release_artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
