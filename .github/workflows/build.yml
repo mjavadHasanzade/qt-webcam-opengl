@@ -3,101 +3,119 @@ name: Cross-Platform Release
 on:
   push:
     tags:
-      - "v*"   # triggers on version tags
+      - "v*"
   pull_request:
     branches:
       - master
       - continuous-integration
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-22.04, windows-latest, macos-latest]
-
+  linux-build:
+    name: Build Linux
+    runs-on: ubuntu-22.04
     steps:
-      # Checkout
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
           fetch-tags: true
 
-      # Install Qt
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.9
           modules: qtcharts qtmultimedia qtshadertools
 
-      # Install dependencies
-      - name: Install build dependencies (Linux)
-        if: matrix.os == 'ubuntu-22.04'
-        run: sudo apt-get update && sudo apt-get install -y build-essential p7zip-full
+      - name: Install 7zip
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full build-essential
 
-      # Create build folder
       - name: Create build directory
         run: mkdir build
 
-      # Build Linux/macOS
-      - name: Build on Linux/macOS
-        if: runner.os != 'Windows'
+      - name: Build
         working-directory: build
         run: |
           qmake -r ../qt-webcam.pro
           make -j$(nproc)
 
-      # Build Windows
-      - name: Build on Windows
-        if: runner.os == 'Windows'
+      - name: Package build
+        run: 7z a qt-webcam-linux.zip build/* -r
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qt-webcam-linux
+          path: qt-webcam-linux.zip
+
+  windows-build:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.9
+          modules: qtcharts qtmultimedia qtshadertools
+
+      - name: Create build directory
+        run: mkdir build
+
+      - name: Build
         working-directory: build
         shell: pwsh
         run: |
           qmake -r ../qt-webcam.pro
           nmake
 
-      # Package Linux
-      - name: Package Linux
-        if: runner.os == 'Linux'
-        run: 7z a qt-webcam-linux.zip build/* -r
-
-      # Package Windows
-      - name: Package Windows
-        if: runner.os == 'Windows'
+      - name: Package build
         shell: pwsh
         run: Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
 
-      # Package macOS
-      - name: Package macOS
-        if: runner.os == 'macOS'
-        run: zip -r qt-webcam-macos.zip build/*
-
-      # Upload artifact per OS
-      - name: Upload build artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-build
-          path: |
-            qt-webcam-linux.zip
-            qt-webcam-windows.zip
-            qt-webcam-macos.zip
+          name: qt-webcam-windows
+          path: qt-webcam-windows.zip
 
-  release:
-    name: Publish to GitHub Releases
-    runs-on: ubuntu-22.04
-    needs: build
+  macos-build:
+    name: Build macOS
+    runs-on: macos-latest
     steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
-          path: release_artifacts
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
         with:
-          tag_name: ${{ github.ref_name }}
-          files: release_artifacts/**/* 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version: 6.9
+          modules: qtcharts qtmultimedia qtshadertools
+
+      - name: Create build directory
+        run: mkdir build
+
+      - name: Build
+        working-directory: build
+        run: |
+          qmake -r ../qt-webcam.pro
+          make -j$(sysctl -n hw.logicalcpu)
+
+      - name: Package build
+        run: zip -r qt-webcam-macos.zip build/*
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qt-webcam-macos
+          path: qt-webcam-macos.zip
