@@ -131,16 +131,19 @@ jobs:
       - name: Bundle AppImage
         run: ./linuxdeployqt-continuous-x86_64.AppImage build/qt-webcam -appimage
 
+      - name: Package build
+        run: 7z a ${{ env.ARTIFACT_ZIP }} build/* -r
+
       - name: Upload zipped build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qt-webcam-build-linux-zip
+          name: qt-webcam-build-linux.zip
           path: ${{ env.ARTIFACT_ZIP }}
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qt-webcam-build-linux-linux-appimage
+          name: qt-webcam-build-linux-appimage
           path: build/qt-webcam-x86_64.AppImage
 
   create-release:
