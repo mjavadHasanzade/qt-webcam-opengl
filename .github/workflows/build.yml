@@ -2,16 +2,9 @@ name: Windows + Linux Release
 
 on:
   push:
-    branches:
-      - "master"
-      - "continuous-integration"
     tags:
-      - "v*"
-  pull_request:
-    branches:
-      - "master"
-      - "continuous-integration"
-
+      - 'v*'
+      
 env:
   QT_VERSION: 6.9
   ARTIFACT_WIN: qt-webcam-build-windows.zip
@@ -98,6 +91,7 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           modules: qtcharts qtmultimedia qtshadertools
+          install-deps: true   # ensures runtime libraries are installed
 
       - name: Install 7zip
         run: sudo apt-get update && sudo apt-get install -y p7zip-full
@@ -112,13 +106,27 @@ jobs:
           make -j$(nproc)
 
       - name: Package build
-        run: 7z a ${{ runner.temp }}/${{ env.ARTIFACT_LIN }} build/* -r
+        run: 7z a ${{ env.ARTIFACT_ZIP }} build/* -r
 
-      - name: Upload build artifact
+      - name: Download linuxdeployqt
+        run: |
+          wget https://github.com/linuxdeploy/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x linuxdeployqt-continuous-x86_64.AppImage
+
+      - name: Bundle AppImage
+        run: ./linuxdeployqt-continuous-x86_64.AppImage build/qt-webcam -appimage
+
+      - name: Upload zipped build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_LIN }}
-          path: ${{ runner.temp }}/${{ env.ARTIFACT_LIN }}
+          name: qt-planets-build-linux-zip
+          path: ${{ env.ARTIFACT_ZIP }}
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qt-planets-build-linux-appimage
+          path: build/qt-webcam-x86_64.AppImage
 
   create-release:
     name: Create Release
