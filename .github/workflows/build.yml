@@ -3,14 +3,14 @@ name: Windows + Linux Release
 on:
   push:
     branches:
-      - 'master'
-      - 'continuous-integration'
+      - "master"
+      - "continuous-integration"
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches:
-      - 'master'
-      - 'continuous-integration'
+      - "master"
+      - "continuous-integration"
 
 env:
   QT_VERSION: 6.9
@@ -148,4 +148,3 @@ jobs:
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
