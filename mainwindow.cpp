@@ -21,6 +21,7 @@
 #include <QStyle>
 #include <QStatusBar>
 #include <QShortcut>
+#include <QGraphicsDropShadowEffect>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -37,6 +38,12 @@ MainWindow::MainWindow(QWidget *parent)
     captureButton = findChild<QPushButton*>("captureButton");
     if (captureButton) {
         connect(captureButton, &QPushButton::clicked, this, &MainWindow::onCaptureButtonClicked);
+        // Add shadow using effect rather than unsupported CSS properties
+        auto *shadow = new QGraphicsDropShadowEffect(this);
+        shadow->setBlurRadius(16);
+        shadow->setOffset(0, 3);
+        shadow->setColor(QColor(0,0,0,160));
+        captureButton->setGraphicsEffect(shadow);
     }
     filtersComboBox = findChild<QComboBox*>("filtersComboBox");
     if (filtersComboBox) {
@@ -89,6 +96,25 @@ MainWindow::MainWindow(QWidget *parent)
         { VideoGLWidget::Posterize, "Posterize" },
         { VideoGLWidget::Warm, "Warm" },
         { VideoGLWidget::Sharpen, "Sharpen" },
+        { VideoGLWidget::Clarendon, "Clarendon" },
+        { VideoGLWidget::Gingham, "Gingham" },
+        { VideoGLWidget::Valencia, "Valencia" },
+        { VideoGLWidget::Nashville, "Nashville" },
+        { VideoGLWidget::XPro2, "X-Pro II" },
+        { VideoGLWidget::Lomo, "Lomo" },
+        { VideoGLWidget::Hudson, "Hudson" },
+        { VideoGLWidget::Willow, "Willow" },
+        { VideoGLWidget::Rise, "Rise" },
+        { VideoGLWidget::Amaro, "Amaro" },
+        { VideoGLWidget::Tint, "Tint" },
+        { VideoGLWidget::Brightness, "Brightness" },
+        { VideoGLWidget::Contrast, "Contrast" },
+        { VideoGLWidget::Vignette, "Vignette" },
+        { VideoGLWidget::FilmGrain, "Film Grain" },
+        { VideoGLWidget::GridOverlay, "Grid Overlay" },
+        { VideoGLWidget::CircleVignette, "Circle Vignette" },
+        { VideoGLWidget::BokehDots, "Bokeh Dots" },
+        { VideoGLWidget::CornerFrame, "Corner Frame" },
     };
 
     for (const FilterItem &fi : items) {
@@ -230,10 +256,8 @@ void MainWindow::applyElegantStyle()
             border: 2px solid #FFFFFF; 
             border-radius: 25px; 
             min-width: 50px; min-height: 50px; 
-            box-shadow: 0px 4px 12px rgba(0,0,0,0.6);
         }
-        QPushButton#captureButton:hover { filter: brightness(1.1); }
-        QPushButton#captureButton:pressed { transform: translateY(1px); }
+        QPushButton#captureButton:hover { background: rgba(255,255,255,0.06); }
     )";
     setStyleSheet(style);
 }
@@ -277,6 +301,25 @@ QString MainWindow::filterNameByType(VideoGLWidget::FilterType type) const
     case VideoGLWidget::Posterize: return QStringLiteral("Posterize");
     case VideoGLWidget::Warm: return QStringLiteral("Warm");
     case VideoGLWidget::Sharpen: return QStringLiteral("Sharpen");
+    case VideoGLWidget::Clarendon: return QStringLiteral("Clarendon");
+    case VideoGLWidget::Gingham: return QStringLiteral("Gingham");
+    case VideoGLWidget::Valencia: return QStringLiteral("Valencia");
+    case VideoGLWidget::Nashville: return QStringLiteral("Nashville");
+    case VideoGLWidget::XPro2: return QStringLiteral("X-Pro II");
+    case VideoGLWidget::Lomo: return QStringLiteral("Lomo");
+    case VideoGLWidget::Hudson: return QStringLiteral("Hudson");
+    case VideoGLWidget::Willow: return QStringLiteral("Willow");
+    case VideoGLWidget::Rise: return QStringLiteral("Rise");
+    case VideoGLWidget::Amaro: return QStringLiteral("Amaro");
+    case VideoGLWidget::GridOverlay: return QStringLiteral("Grid Overlay");
+    case VideoGLWidget::CircleVignette: return QStringLiteral("Circle Vignette");
+    case VideoGLWidget::BokehDots: return QStringLiteral("Bokeh Dots");
+    case VideoGLWidget::CornerFrame: return QStringLiteral("Corner Frame");
+    case VideoGLWidget::Tint: return QStringLiteral("Tint");
+    case VideoGLWidget::Brightness: return QStringLiteral("Brightness");
+    case VideoGLWidget::Contrast: return QStringLiteral("Contrast");
+    case VideoGLWidget::Vignette: return QStringLiteral("Vignette");
+    case VideoGLWidget::FilmGrain: return QStringLiteral("Film Grain");
     }
     return QStringLiteral("Unknown");
 }

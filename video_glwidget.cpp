@@ -45,12 +45,14 @@ void VideoGLWidget::initializeGL()
 void VideoGLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT);
-    if (currentFrame.isNull() || !program) return;
+    if (currentFrame.isNull() || !program || !program->isLinked()) return;
 
     program->bind();
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureId);
+    program->setUniformValue("texture", 0);
 
-    if (filterType == Move) {
+    if (filterType == Move || filterType == FilmGrain) {
         float t = timer.elapsed() / 1000.0f;
         program->setUniformValue("time", t);
     }
@@ -94,12 +96,16 @@ void VideoGLWidget::updateTexture()
 
 void VideoGLWidget::updateShader()
 {
+    // Ensure we have a current context for all GL and shader operations
+    if (!isValid()) return;
+    makeCurrent();
     if (program) {
         delete program;
         program = nullptr;
     }
-    program = new QOpenGLShaderProgram(this);
-    program->addShaderFromSourceCode(QOpenGLShader::Vertex,
+    auto createProgramWithVertex = [this]() {
+        QOpenGLShaderProgram *p = new QOpenGLShaderProgram(this);
+        bool vOKLocal = p->addShaderFromSourceCode(QOpenGLShader::Vertex,
         "attribute vec2 position;\n"
         "attribute vec2 texCoord;\n"
         "varying vec2 vTexCoord;\n"
@@ -107,7 +113,13 @@ void VideoGLWidget::updateShader()
         "    gl_Position = vec4(position, 0.0, 1.0);\n"
         "    vTexCoord = texCoord;\n"
         "}"
-    );
+        );
+        if (!vOKLocal) {
+            qWarning("Vertex shader compile error: %s", qPrintable(p->log()));
+        }
+        return p;
+    };
+    program = createProgramWithVertex();
     QString fragPath;
     switch (filterType) {
     case None:
@@ -146,11 +158,89 @@ void VideoGLWidget::updateShader()
     case Sharpen:
         fragPath = ":/assets/filters/sharpen.frag";
         break;
+    case Clarendon:
+        fragPath = ":/assets/filters/clarendon.frag";
+        break;
+    case Gingham:
+        fragPath = ":/assets/filters/gingham.frag";
+        break;
+    case Valencia:
+        fragPath = ":/assets/filters/valencia.frag";
+        break;
+    case Nashville:
+        fragPath = ":/assets/filters/nashville.frag";
+        break;
+    case XPro2:
+        fragPath = ":/assets/filters/xpro2.frag";
+        break;
+    case Lomo:
+        fragPath = ":/assets/filters/lomo.frag";
+        break;
+    case Hudson:
+        fragPath = ":/assets/filters/hudson.frag";
+        break;
+    case Willow:
+        fragPath = ":/assets/filters/willow.frag";
+        break;
+    case Rise:
+        fragPath = ":/assets/filters/rise.frag";
+        break;
+    case Amaro:
+        fragPath = ":/assets/filters/amaro.frag";
+        break;
+    case Tint:
+        fragPath = ":/assets/filters/tint.frag";
+        break;
+    case Brightness:
+        fragPath = ":/assets/filters/brightness.frag";
+        break;
+    case Contrast:
+        fragPath = ":/assets/filters/contrast.frag";
+        break;
+    case Vignette:
+        fragPath = ":/assets/filters/vignette.frag";
+        break;
+    case FilmGrain:
+        fragPath = ":/assets/filters/filmgrain.frag";
+        break;
+    case GridOverlay:
+        fragPath = ":/assets/filters/gridoverlay.frag";
+        break;
+    case CircleVignette:
+        fragPath = ":/assets/filters/circlevignette.frag";
+        break;
+    case BokehDots:
+        fragPath = ":/assets/filters/bokehdots.frag";
+        break;
+    case CornerFrame:
+        fragPath = ":/assets/filters/cornerframe.frag";
+        break;
     }
-    QFile file(fragPath);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString frag = file.readAll();
-        program->addShaderFromSourceCode(QOpenGLShader::Fragment, frag);
-        program->link();
+    auto loadAndLink = [this](const QString &path) -> bool {
+        QFile f(path);
+        if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) return false;
+        const QString src = f.readAll();
+        bool ok = program->addShaderFromSourceCode(QOpenGLShader::Fragment, src);
+        if (!ok) {
+            qWarning("Fragment shader compile error (%s): %s", qPrintable(path), qPrintable(program->log()));
+            return false;
+        }
+        ok = program->link();
+        if (!ok) {
+            qWarning("Shader link error (%s): %s", qPrintable(path), qPrintable(program->log()));
+        }
+        return ok;
+    };
+
+    bool linked = loadAndLink(fragPath);
+    if (!linked) {
+        // Recreate and attach vertex shader before fallback fragment
+        delete program;
+        program = createProgramWithVertex();
+        if (!loadAndLink(":/assets/filters/none.frag")) {
+            delete program;
+            program = nullptr;
+        }
     }
+    doneCurrent();
 }

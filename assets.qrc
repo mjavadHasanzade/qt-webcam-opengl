@@ -13,5 +13,24 @@
         <file>assets/filters/posterize.frag</file>
         <file>assets/filters/cool.frag</file>
         <file>assets/filters/warm.frag</file>
+        <file>assets/filters/clarendon.frag</file>
+        <file>assets/filters/gingham.frag</file>
+        <file>assets/filters/valencia.frag</file>
+        <file>assets/filters/nashville.frag</file>
+        <file>assets/filters/xpro2.frag</file>
+        <file>assets/filters/lomo.frag</file>
+        <file>assets/filters/hudson.frag</file>
+        <file>assets/filters/willow.frag</file>
+        <file>assets/filters/rise.frag</file>
+        <file>assets/filters/amaro.frag</file>
+        <file>assets/filters/tint.frag</file>
+        <file>assets/filters/brightness.frag</file>
+        <file>assets/filters/contrast.frag</file>
+        <file>assets/filters/vignette.frag</file>
+        <file>assets/filters/filmgrain.frag</file>
+        <file>assets/filters/gridoverlay.frag</file>
+        <file>assets/filters/circlevignette.frag</file>
+        <file>assets/filters/bokehdots.frag</file>
+        <file>assets/filters/cornerframe.frag</file>
     </qresource>
 </RCC>
