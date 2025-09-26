@@ -1,53 +1,93 @@
-name: Linux Release
+name: Cross-Platform Release
 
 on:
   push:
-    branches:
-      - "master"
-      - "continuous-integration"
-      - "cross-platform"
     tags:
-      - "v*"
+      - "v*"   # triggers on version tags
   pull_request:
     branches:
-      - "master"
-      - "continuous-integration"
+      - master
+      - continuous-integration
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-latest]
 
     steps:
-      - name: Checkout repo
+      # Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
           fetch-tags: true
 
+      # Install Qt
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.9
-          modules: qtcharts qtmultimedia qtshadertools 
+          modules: qtcharts qtmultimedia qtshadertools
 
-      - name: Install 7zip
-        run: sudo apt-get update && sudo apt-get install -y p7zip-full
+      # Build dependencies
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full build-essential
 
+      # Create build folder
       - name: Create build directory
         run: mkdir build
 
+      # Build
       - name: Build
         working-directory: build
         run: |
-          qmake -r ../qt-webcam.pro
-          make -j$(nproc)
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]] || [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            qmake -r ../qt-webcam.pro
+            make -j$(nproc)
+          else
+            qmake -r ../qt-webcam.pro
+            nmake
+          fi
 
-      - name: Package build
-        run: 7z a qt-planets-build.zip build/* -r
+      # Package
+      - name: Package
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+            7z a qt-webcam-linux.zip build/* -r
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            powershell Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
+          else
+            zip -r qt-webcam-macos.zip build/*
+          fi
 
-      - name: Upload build artifact
+      # Upload artifact for release
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qt-planets-build
-          path: qt-planets-build.zip
+          name: ${{ matrix.os }}-build
+          path: |
+            qt-webcam-linux.zip
+            qt-webcam-windows.zip
+            qt-webcam-macos.zip
+
+  release:
+    name: Publish to GitHub Releases
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: release_artifacts/**/* 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
