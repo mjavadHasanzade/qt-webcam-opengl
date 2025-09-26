@@ -50,42 +50,43 @@ jobs:
           path: build/qt-webcam-linux.zip
 
   windows-build:
-  name: Build Windows
-  runs-on: windows-latest
-  steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        fetch-depth: 0
-        fetch-tags: true
+    name: Build Windows (MinGW)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
 
-    - uses: jurplel/install-qt-action@v4
-      with:
-        version: 6.9
-        modules: qtcharts qtmultimedia qtshadertools
+      - name: Install Qt with MinGW
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.9
+          arch: win64_mingw
+          modules: qtcharts qtmultimedia qtshadertools
 
-    - name: Create build directory
-      run: mkdir build
+      - name: Install 7-zip
+        run: choco install 7zip -y
 
-    - name: Build with MSVC
-      shell: pwsh
-      working-directory: build
-      run: |
-        # Initialize MSVC environment
-        & "${env:VSINSTALLDIR}VC\Auxiliary\Build\vcvarsall.bat" x64
+      - name: Create build directory
+        run: mkdir build
 
-        # Build project
-        qmake -r ../qt-webcam.pro
-        nmake
+      - name: Build with MinGW
+        working-directory: build
+        run: |
+          qmake -r ../qt-webcam.pro
+          mingw32-make -j4
 
-    - name: Package build
-      shell: pwsh
-      run: Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
+      - name: Package build
+        run: 7z a qt-webcam-windows.zip .\build\* -r
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: qt-webcam-windows
-        path: qt-webcam-windows.zip
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qt-webcam-windows
+          path: qt-webcam-windows.zip
 
   release:
     name: Create GitHub Release
@@ -93,6 +94,7 @@ jobs:
     needs:
       - linux-build
       - windows-build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
