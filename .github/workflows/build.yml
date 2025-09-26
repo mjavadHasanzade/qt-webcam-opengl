@@ -13,8 +13,6 @@ jobs:
   linux-build:
     name: Build Linux
     runs-on: ubuntu-22.04
-    outputs:
-      artifact-path: ${{ steps.upload.outputs.artifact-path }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -46,7 +44,6 @@ jobs:
         run: 7z a qt-webcam-linux.zip * -r
 
       - name: Upload artifact
-        id: upload
         uses: actions/upload-artifact@v4
         with:
           name: qt-webcam-linux
@@ -55,8 +52,6 @@ jobs:
   windows-build:
     name: Build Windows
     runs-on: windows-latest
-    outputs:
-      artifact-path: ${{ steps.upload.outputs.artifact-path }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -76,8 +71,8 @@ jobs:
         shell: pwsh
         working-directory: build
         run: |
-          # Initialize MSVC environment
-          & "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64
+          # Initialize MSVC x64 environment
+          & "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 
           # Build project
           qmake -r ../qt-webcam.pro
@@ -88,7 +83,6 @@ jobs:
         run: Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
 
       - name: Upload artifact
-        id: upload
         uses: actions/upload-artifact@v4
         with:
           name: qt-webcam-windows
