@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Qt Webcam
+Exec=qt-webcam
+Icon=qt-webcam
+Type=Application
+Categories=Utility;
