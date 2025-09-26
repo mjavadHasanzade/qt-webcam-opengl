@@ -42,6 +42,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="filtersButton">
+        <property name="text">
+         <string>Filters</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>

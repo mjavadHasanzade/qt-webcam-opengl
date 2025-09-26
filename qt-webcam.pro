@@ -2,7 +2,7 @@ QT       += core
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-QT += multimedia multimediawidgets
+QT += multimedia multimediawidgets openglwidgets
 
 CONFIG += c++17
 
@@ -14,12 +14,14 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     cameracapture.cpp \
-    capturedialog.cpp
+    capturedialog.cpp \
+    video_glwidget.cpp
 
 HEADERS += \
     mainwindow.h \
     cameracapture.h \
-    capturedialog.h
+    capturedialog.h \
+    video_glwidget.h
 
 FORMS += \
     mainwindow.ui

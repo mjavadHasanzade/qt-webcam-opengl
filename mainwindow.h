@@ -14,6 +14,7 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class CameraCapture;
+class VideoGLWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -25,14 +26,15 @@ public:
 
 private:
     Ui::MainWindow *ui;
-
-    QLabel *label;
+    VideoGLWidget *videoWidget;
     QPushButton *captureButton;
+    QPushButton *filtersButton;
     CameraCapture *cameraCapture;
 
 private slots:
     void onCaptureButtonClicked();
     void onImageCaptured(const QImage &image);
+    void onFiltersButtonClicked();
 };
 
 #endif // MAINWINDOW_H
