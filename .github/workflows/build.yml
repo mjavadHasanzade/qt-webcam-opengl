@@ -32,40 +32,50 @@ jobs:
           version: 6.9
           modules: qtcharts qtmultimedia qtshadertools
 
-      # Build dependencies
-      - name: Install dependencies
+      # Install dependencies
+      - name: Install build dependencies (Linux)
         if: matrix.os == 'ubuntu-22.04'
-        run: sudo apt-get update && sudo apt-get install -y p7zip-full build-essential
+        run: sudo apt-get update && sudo apt-get install -y build-essential p7zip-full
 
       # Create build folder
       - name: Create build directory
         run: mkdir build
 
-      # Build
-      - name: Build
+      # Build Linux/macOS
+      - name: Build on Linux/macOS
+        if: runner.os != 'Windows'
         working-directory: build
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]] || [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            qmake -r ../qt-webcam.pro
-            make -j$(nproc)
-          else
-            qmake -r ../qt-webcam.pro
-            nmake
-          fi
+          qmake -r ../qt-webcam.pro
+          make -j$(nproc)
 
-      # Package
-      - name: Package
+      # Build Windows
+      - name: Build on Windows
+        if: runner.os == 'Windows'
+        working-directory: build
+        shell: pwsh
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-            7z a qt-webcam-linux.zip build/* -r
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            powershell Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
-          else
-            zip -r qt-webcam-macos.zip build/*
-          fi
+          qmake -r ../qt-webcam.pro
+          nmake
 
-      # Upload artifact for release
-      - name: Upload artifact
+      # Package Linux
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        run: 7z a qt-webcam-linux.zip build/* -r
+
+      # Package Windows
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
+
+      # Package macOS
+      - name: Package macOS
+        if: runner.os == 'macOS'
+        run: zip -r qt-webcam-macos.zip build/*
+
+      # Upload artifact per OS
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-build
