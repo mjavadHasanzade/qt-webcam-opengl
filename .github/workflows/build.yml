@@ -106,7 +106,7 @@ jobs:
           make -j$(nproc)
 
       - name: Package build
-        run: 7z a ${{ env.ARTIFACT_ZIP }} build/* -r
+        run: 7z a ${{ env.ARTIFACT_LIN }} build/* -r
 
       - name: Create desktop file for AppImage
         run: |
@@ -132,13 +132,13 @@ jobs:
         run: ./linuxdeployqt-continuous-x86_64.AppImage build/qt-webcam -appimage
 
       - name: Package build
-        run: 7z a ${{ env.ARTIFACT_ZIP }} build/* -r
+        run: 7z a ${{ env.ARTIFACT_LIN }} build/* -r
 
       - name: Upload zipped build artifact
         uses: actions/upload-artifact@v4
         with:
           name: qt-webcam-build-linux.zip
-          path: ${{ env.ARTIFACT_ZIP }}
+          path: ${{ env.ARTIFACT_LIN }}
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
