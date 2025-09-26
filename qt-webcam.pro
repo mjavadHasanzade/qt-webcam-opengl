@@ -12,10 +12,14 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    cameracapture.cpp \
+    capturedialog.cpp
 
 HEADERS += \
-    mainwindow.h
+    mainwindow.h \
+    cameracapture.h \
+    capturedialog.h
 
 FORMS += \
     mainwindow.ui
@@ -24,3 +28,6 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    assets.qrc

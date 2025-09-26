@@ -6,6 +6,10 @@
 #include <QDebug>
 #include <QVideoFrame>
 #include <QPixmap>
+#include "cameracapture.h"
+#include <QPushButton>
+#include <QMessageBox>
+#include "capturedialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -16,40 +20,36 @@ MainWindow::MainWindow(QWidget *parent)
     label = new QLabel(this);
     label->setAlignment(Qt::AlignCenter);
 
-    QVBoxLayout *layout = new QVBoxLayout;
-    layout->addWidget(label);
-    ui->centralwidget->setLayout(layout);
-
-    // List available cameras
-    qDebug() << "Available cameras:";
-    const auto cameras = QMediaDevices::videoInputs();
-    for (const QCameraDevice &cam : cameras)
-        qDebug() << " -" << cam.description();
-
-    if (cameras.isEmpty()) {
-        qDebug() << "No camera detected!";
-        return;
+    captureButton = findChild<QPushButton*>("captureButton");
+    if (captureButton) {
+        connect(captureButton, &QPushButton::clicked, this, &MainWindow::onCaptureButtonClicked);
     }
 
-    camera = new QCamera(cameras.first(), this);
+    ui->videoLayout->addWidget(label);
 
-    session.setCamera(camera);
-
-    videoSink = new QVideoSink(this);
-    session.setVideoOutput(videoSink);
-
-    connect(videoSink, &QVideoSink::videoFrameChanged, this, [=](const QVideoFrame &frame){
-        if (!frame.isValid()) return;
-        QImage img = frame.toImage();
+    cameraCapture = new CameraCapture(this);
+    connect(cameraCapture, &CameraCapture::frameReady, this, [this](const QImage &img){
         if (!img.isNull())
             label->setPixmap(QPixmap::fromImage(img).scaled(label->size(), Qt::KeepAspectRatio));
     });
-
-    // Start camera
-    camera->start();
+    connect(cameraCapture, &CameraCapture::imageCaptured, this, &MainWindow::onImageCaptured);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::onCaptureButtonClicked()
+{
+    if (cameraCapture)
+        cameraCapture->captureImage();
+}
+
+void MainWindow::onImageCaptured(const QImage &image)
+{
+    if (image.isNull()) return;
+    CaptureDialog *dialog = new CaptureDialog(image, this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->show();
 }
