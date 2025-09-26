@@ -4,5 +4,14 @@
         <file>assets/filters/none.frag</file>
         <file>assets/filters/grayscale.frag</file>
         <file>assets/filters/sepia.frag</file>
+        <file>assets/filters/invert.frag</file>
+        <file>assets/filters/blur.frag</file>
+        <file>assets/filters/edge.frag</file>
+        <file>assets/filters/move.frag</file>
+        <file>assets/filters/sharpen.frag</file>
+        <file>assets/filters/emboss.frag</file>
+        <file>assets/filters/posterize.frag</file>
+        <file>assets/filters/cool.frag</file>
+        <file>assets/filters/warm.frag</file>
     </qresource>
 </RCC>

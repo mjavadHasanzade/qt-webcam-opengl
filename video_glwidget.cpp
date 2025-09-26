@@ -2,10 +2,19 @@
 #include <QOpenGLTexture>
 #include <QOpenGLShaderProgram>
 #include <QFile>
+#include <QTimer>
+#include <QElapsedTimer>
 
 VideoGLWidget::VideoGLWidget(QWidget *parent)
     : QOpenGLWidget(parent), textureId(0), program(nullptr)
-{}
+{
+    if (!timer.isValid()) timer.start();
+    connect(&frameUpdateTimer, &QTimer::timeout, this, [this]{
+        if (filterType == Move) update();
+    });
+    frameUpdateTimer.setInterval(16); // ~60 FPS
+    frameUpdateTimer.start();
+}
 
 void VideoGLWidget::setFrame(const QImage &frame)
 {
@@ -18,6 +27,10 @@ void VideoGLWidget::setFilterType(FilterType type)
 {
     if (filterType != type) {
         filterType = type;
+        if (filterType == Move) {
+            float t = timer.elapsed() / 1000.0f;
+            program->setUniformValue("time", t);
+        }
         updateShader();
         update();
     }
@@ -37,6 +50,11 @@ void VideoGLWidget::paintGL()
 
     program->bind();
     glBindTexture(GL_TEXTURE_2D, textureId);
+
+    if (filterType == Move) {
+        float t = timer.elapsed() / 1000.0f;
+        program->setUniformValue("time", t);
+    }
 
     // Set up vertices and texture coordinates for a full-screen quad
     GLfloat vertices[] = {
@@ -101,6 +119,33 @@ void VideoGLWidget::updateShader()
         break;
     case Sepia:
         fragPath = ":/assets/filters/sepia.frag";
+        break;
+    case Invert:
+        fragPath = ":/assets/filters/invert.frag";
+        break;
+    case Blur:
+        fragPath = ":/assets/filters/blur.frag";
+        break;
+    case Edge:
+        fragPath = ":/assets/filters/edge.frag";
+        break;
+    case Move:
+        fragPath = ":/assets/filters/move.frag";
+        break;
+    case Cool:
+        fragPath = ":/assets/filters/cool.frag";
+        break;
+    case Emboss:
+        fragPath = ":/assets/filters/emboss.frag";
+        break;
+    case Posterize:
+        fragPath = ":/assets/filters/posterize.frag";
+        break;
+    case Warm:
+        fragPath = ":/assets/filters/warm.frag";
+        break;
+    case Sharpen:
+        fragPath = ":/assets/filters/sharpen.frag";
         break;
     }
     QFile file(fragPath);

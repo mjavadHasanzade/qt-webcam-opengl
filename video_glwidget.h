@@ -5,6 +5,8 @@
 #include <QOpenGLFunctions>
 #include <QImage>
 #include <QOpenGLShaderProgram>
+#include <QElapsedTimer>
+#include <QTimer>
 
 class VideoGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -13,7 +15,16 @@ public:
     enum FilterType {
         None,
         Grayscale,
-        Sepia
+        Sepia,
+        Invert,
+        Blur,
+        Edge,
+        Move,
+        Cool,
+        Emboss,
+        Posterize,
+        Warm,
+        Sharpen,
         // Add more filters here
     };
     explicit VideoGLWidget(QWidget *parent = nullptr);
@@ -32,6 +43,8 @@ private:
     FilterType filterType = None;
     void updateTexture();
     void updateShader();
+    QElapsedTimer timer;
+    QTimer frameUpdateTimer;
 };
 
 #endif // VIDEOGLWIDGET_H

@@ -31,6 +31,15 @@ MainWindow::MainWindow(QWidget *parent)
         filtersComboBox->addItem("None");
         filtersComboBox->addItem("Grayscale");
         filtersComboBox->addItem("Sepia");
+        filtersComboBox->addItem("Invert");
+        filtersComboBox->addItem("Blur");
+        filtersComboBox->addItem("Edge");
+        filtersComboBox->addItem("Move");
+        filtersComboBox->addItem("Cool");
+        filtersComboBox->addItem("Emboss");
+        filtersComboBox->addItem("Posterize");
+        filtersComboBox->addItem("Warm");
+        filtersComboBox->addItem("Sharpen");
         connect(filtersComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onFilterChanged);
         filtersComboBox->setCurrentIndex(0);
     }
@@ -75,6 +84,33 @@ void MainWindow::onFilterChanged(int index)
         break;
     case 2:
         videoWidget->setFilterType(VideoGLWidget::Sepia);
+        break;
+    case 3:
+        videoWidget->setFilterType(VideoGLWidget::Invert);
+        break;
+    case 4:
+        videoWidget->setFilterType(VideoGLWidget::Blur);
+        break;
+    case 5:
+        videoWidget->setFilterType(VideoGLWidget::Edge);
+        break;
+    case 6:
+        videoWidget->setFilterType(VideoGLWidget::Move);
+        break;
+    case 7:
+        videoWidget->setFilterType(VideoGLWidget::Cool);
+        break;
+    case 8:
+        videoWidget->setFilterType(VideoGLWidget::Emboss);
+        break;
+    case 9:
+        videoWidget->setFilterType(VideoGLWidget::Posterize);
+        break;
+    case 10:
+        videoWidget->setFilterType(VideoGLWidget::Warm);
+        break;
+    case 11:
+        videoWidget->setFilterType(VideoGLWidget::Sharpen);
         break;
     }
 }
