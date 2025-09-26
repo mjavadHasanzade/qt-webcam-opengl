@@ -8,6 +8,7 @@
 #include <QLabel>
 #include "cameracapture.h"
 #include <QPushButton>
+#include <QComboBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -28,13 +29,13 @@ private:
     Ui::MainWindow *ui;
     VideoGLWidget *videoWidget;
     QPushButton *captureButton;
-    QPushButton *filtersButton;
+    QComboBox *filtersComboBox;
     CameraCapture *cameraCapture;
 
 private slots:
     void onCaptureButtonClicked();
     void onImageCaptured(const QImage &image);
-    void onFiltersButtonClicked();
+    void onFilterChanged(int index);
 };
 
 #endif // MAINWINDOW_H

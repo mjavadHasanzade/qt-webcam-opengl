@@ -1,6 +1,7 @@
 #include "video_glwidget.h"
 #include <QOpenGLTexture>
 #include <QOpenGLShaderProgram>
+#include <QFile>
 
 VideoGLWidget::VideoGLWidget(QWidget *parent)
     : QOpenGLWidget(parent), textureId(0), program(nullptr)
@@ -8,7 +9,7 @@ VideoGLWidget::VideoGLWidget(QWidget *parent)
 
 void VideoGLWidget::setFrame(const QImage &frame)
 {
-    currentFrame = frame.convertToFormat(QImage::Format_RGBA8888).mirrored(false, true);
+    currentFrame = frame.convertToFormat(QImage::Format_RGBA8888).flipped(Qt::Horizontal | Qt::Vertical);
     updateTexture();
     update();
 }
@@ -90,39 +91,22 @@ void VideoGLWidget::updateShader()
         "    vTexCoord = texCoord;\n"
         "}"
     );
-    QString frag;
+    QString fragPath;
     switch (filterType) {
     case None:
-        frag =
-            "uniform sampler2D texture;\n"
-            "varying vec2 vTexCoord;\n"
-            "void main() {\n"
-            "    gl_FragColor = texture2D(texture, vTexCoord);\n"
-            "}";
+        fragPath = ":/assets/filters/none.frag";
         break;
     case Grayscale:
-        frag =
-            "uniform sampler2D texture;\n"
-            "varying vec2 vTexCoord;\n"
-            "void main() {\n"
-            "    vec4 color = texture2D(texture, vTexCoord);\n"
-            "    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));\n"
-            "    gl_FragColor = vec4(gray, gray, gray, 1.0);\n"
-            "}";
+        fragPath = ":/assets/filters/grayscale.frag";
         break;
     case Sepia:
-        frag =
-            "uniform sampler2D texture;\n"
-            "varying vec2 vTexCoord;\n"
-            "void main() {\n"
-            "    vec4 color = texture2D(texture, vTexCoord);\n"
-            "    float r = dot(color.rgb, vec3(0.393, 0.769, 0.189));\n"
-            "    float g = dot(color.rgb, vec3(0.349, 0.686, 0.168));\n"
-            "    float b = dot(color.rgb, vec3(0.272, 0.534, 0.131));\n"
-            "    gl_FragColor = vec4(r, g, b, 1.0);\n"
-            "}";
+        fragPath = ":/assets/filters/sepia.frag";
         break;
     }
-    program->addShaderFromSourceCode(QOpenGLShader::Fragment, frag);
-    program->link();
+    QFile file(fragPath);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString frag = file.readAll();
+        program->addShaderFromSourceCode(QOpenGLShader::Fragment, frag);
+        program->link();
+    }
 }

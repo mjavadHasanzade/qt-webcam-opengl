@@ -35,7 +35,7 @@
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">border-image: url(:/assets/capture-48.png); border-radius: 100%;</string>
+         <string notr="true">border-image: url(:/assets/icons/capture-48.png); border-radius: 100%;</string>
         </property>
         <property name="text">
          <string/>
@@ -43,9 +43,9 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="filtersButton">
-        <property name="text">
-         <string>Filters</string>
+       <widget class="QComboBox" name="filtersComboBox">
+        <property name="editable">
+         <bool>false</bool>
         </property>
        </widget>
       </item>

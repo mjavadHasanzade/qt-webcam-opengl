@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/">
-        <file>assets/capture-48.png</file>
+        <file>assets/icons/capture-48.png</file>
+        <file>assets/filters/none.frag</file>
+        <file>assets/filters/grayscale.frag</file>
+        <file>assets/filters/sepia.frag</file>
     </qresource>
 </RCC>

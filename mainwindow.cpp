@@ -12,6 +12,7 @@
 #include "capturedialog.h"
 #include "video_glwidget.h"
 #include <QMenu>
+#include <QComboBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -21,9 +22,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     videoWidget = new VideoGLWidget(this);
 
-
-    connect(ui->captureButton, &QPushButton::clicked, this, &MainWindow::onCaptureButtonClicked);
-    connect(ui->filtersButton, &QPushButton::clicked, this, &MainWindow::onFiltersButtonClicked);
+    captureButton = findChild<QPushButton*>("captureButton");
+    if (captureButton) {
+        connect(captureButton, &QPushButton::clicked, this, &MainWindow::onCaptureButtonClicked);
+    }
+    filtersComboBox = findChild<QComboBox*>("filtersComboBox");
+    if (filtersComboBox) {
+        filtersComboBox->addItem("None");
+        filtersComboBox->addItem("Grayscale");
+        filtersComboBox->addItem("Sepia");
+        connect(filtersComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onFilterChanged);
+        filtersComboBox->setCurrentIndex(0);
+    }
 
     ui->videoLayout->addWidget(videoWidget);
 
@@ -31,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(cameraCapture, &CameraCapture::frameReady, videoWidget, &VideoGLWidget::setFrame);
     connect(cameraCapture, &CameraCapture::imageCaptured, this, &MainWindow::onImageCaptured);
 
+    // Start with no filter
     videoWidget->setFilterType(VideoGLWidget::None);
 }
 
@@ -53,18 +64,18 @@ void MainWindow::onImageCaptured(const QImage &image)
     dialog->show();
 }
 
-void MainWindow::onFiltersButtonClicked()
+void MainWindow::onFilterChanged(int index)
 {
-    QMenu menu(this);
-    QAction *noneAction = menu.addAction("None");
-    QAction *grayAction = menu.addAction("Grayscale");
-    QAction *sepiaAction = menu.addAction("Sepia");
-    QAction *chosen = menu.exec(filtersButton->mapToGlobal(QPoint(0, filtersButton->height())));
-    if (chosen == noneAction) {
+    switch (index) {
+    case 0:
         videoWidget->setFilterType(VideoGLWidget::None);
-    } else if (chosen == grayAction) {
+        break;
+    case 1:
         videoWidget->setFilterType(VideoGLWidget::Grayscale);
-    } else if (chosen == sepiaAction) {
+        break;
+    case 2:
         videoWidget->setFilterType(VideoGLWidget::Sepia);
+        break;
     }
 }
+
