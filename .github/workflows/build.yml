@@ -1,70 +1,69 @@
-name: Build and Release Qt App
+name: Linux Release
 
 on:
   push:
+    branches:
+      - "master"
+      - "continuous-integration"
+      - "cross-platform"
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - "master"
+      - "continuous-integration"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SOURCE_DIR: ${{ github.workspace }}
+  ARTIFACT: qt-planets-build.zip
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
 
-      # Install Qt
+      - name: Workspace
+        run: |
+          echo "Workspace: ${{ github.workspace }}"
+          echo "Runner temp: ${{ runner.temp }}"
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: 6.9* 
-          modules: qtbase qtdeclarative qtmultimedia qttools qtshadertools qtcharts qt5compat
-          tools: "tools_ifw"
+          version: 6.7   # pick Qt 6.7.x
+          modules: qtcharts qtmultimedia qttools qtshadertools
 
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Install 7zip
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full
 
-      # Build
+      - name: Create build directory
+        run: mkdir -p ${{ env.SOURCE_DIR }}/build
+
       - name: Build
-        run: cmake --build build --config Release -j 4
-
-      # Package binaries
-      - name: Package app
+        working-directory: ${{ env.SOURCE_DIR }}/build
         run: |
-          mkdir -p artifacts
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            cp build/your_app artifacts/your_app_linux
-          elif [ "${{ matrix.os }}" == "windows-latest" ]; then
-            cp build/Release/your_app.exe artifacts/your_app_windows.exe
-          else
-            cp build/your_app artifacts/your_app_macos
-          fi
+          qmake -r ${{ env.SOURCE_DIR }}/QtWidgetOpenGl.pro
+          make -j$(nproc)
 
-      - name: Upload build artifacts
+      - name: Package build
+        working-directory: ${{ env.SOURCE_DIR }}
+        run: |
+          7z a ${{ env.ARTIFACT }} build/* -r
+          ls -lh
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-binaries
-          path: artifacts/
-
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release_artifacts
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: release_artifacts/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ env.ARTIFACT }}
+          path: ${{ env.SOURCE_DIR }}/${{ env.ARTIFACT }}
