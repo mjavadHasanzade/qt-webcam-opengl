@@ -118,6 +118,9 @@ jobs:
           Type=Application
           Categories=Utility;
           EOL
+      
+      - name: Copy icon for AppImage
+        run: cp assets/qt-webcam.png build/qt-webcam.png
 
       - name: Download linuxdeployqt
         run: |
