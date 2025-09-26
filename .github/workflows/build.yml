@@ -1,4 +1,4 @@
-name: Cross-Platform Release
+name: Linux + Windows Release
 
 on:
   push:
@@ -13,6 +13,8 @@ jobs:
   linux-build:
     name: Build Linux
     runs-on: ubuntu-22.04
+    outputs:
+      artifact-path: ${{ steps.upload.outputs.artifact-path }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -28,7 +30,7 @@ jobs:
           modules: qtcharts qtmultimedia qtshadertools
 
       - name: Install 7zip
-        run: sudo apt-get update && sudo apt-get install -y p7zip-full build-essential
+        run: sudo apt-get update && sudo apt-get install -y build-essential p7zip-full
 
       - name: Create build directory
         run: mkdir build
@@ -40,27 +42,29 @@ jobs:
           make -j$(nproc)
 
       - name: Package build
-        run: 7z a qt-webcam-linux.zip build/* -r
+        working-directory: build
+        run: 7z a qt-webcam-linux.zip * -r
 
       - name: Upload artifact
+        id: upload
         uses: actions/upload-artifact@v4
         with:
           name: qt-webcam-linux
-          path: qt-webcam-linux.zip
+          path: build/qt-webcam-linux.zip
 
   windows-build:
     name: Build Windows
     runs-on: windows-latest
+    outputs:
+      artifact-path: ${{ steps.upload.outputs.artifact-path }}
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
+      - uses: jurplel/install-qt-action@v4
         with:
           version: 6.9
           modules: qtcharts qtmultimedia qtshadertools
@@ -68,10 +72,14 @@ jobs:
       - name: Create build directory
         run: mkdir build
 
-      - name: Build
-        working-directory: build
+      - name: Build with MSVC
         shell: pwsh
+        working-directory: build
         run: |
+          # Initialize MSVC environment
+          & "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64
+
+          # Build project
           qmake -r ../qt-webcam.pro
           nmake
 
@@ -80,42 +88,35 @@ jobs:
         run: Compress-Archive -Path build\* -DestinationPath qt-webcam-windows.zip
 
       - name: Upload artifact
+        id: upload
         uses: actions/upload-artifact@v4
         with:
           name: qt-webcam-windows
           path: qt-webcam-windows.zip
 
-  macos-build:
-    name: Build macOS
-    runs-on: macos-latest
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-22.04
+    needs:
+      - linux-build
+      - windows-build
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
         with:
-          submodules: recursive
-          fetch-depth: 0
-          fetch-tags: true
+          name: qt-webcam-linux
+          path: release_artifacts
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
         with:
-          version: 6.9
-          modules: qtcharts qtmultimedia qtshadertools
+          name: qt-webcam-windows
+          path: release_artifacts
 
-      - name: Create build directory
-        run: mkdir build
-
-      - name: Build
-        working-directory: build
-        run: |
-          qmake -r ../qt-webcam.pro
-          make -j$(sysctl -n hw.logicalcpu)
-
-      - name: Package build
-        run: zip -r qt-webcam-macos.zip build/*
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: qt-webcam-macos
-          path: qt-webcam-macos.zip
+          tag_name: ${{ github.ref_name }}
+          files: release_artifacts/**/* 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
