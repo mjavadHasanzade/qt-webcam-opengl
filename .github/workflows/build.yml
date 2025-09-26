@@ -121,30 +121,30 @@ jobs:
           path: ${{ runner.temp }}/${{ env.ARTIFACT_LIN }}
 
   create-release:
-  name: Create Release
-  runs-on: ubuntu-22.04
-  needs: [build-windows, build-linux]
-  steps:
-    - name: Download Windows artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ env.ARTIFACT_WIN }}
-        path: ./release_artifacts
+    name: Create Release
+    runs-on: ubuntu-22.04
+    needs: [build-windows, build-linux]
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_WIN }}
+          path: ./release_artifacts
 
-    - name: Download Linux artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ env.ARTIFACT_LIN }}
-        path: ./release_artifacts
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_LIN }}
+          path: ./release_artifacts
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          release_artifacts/${{ env.ARTIFACT_WIN }}
-          release_artifacts/${{ env.ARTIFACT_LIN }}
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release_artifacts/${{ env.ARTIFACT_WIN }}
+            release_artifacts/${{ env.ARTIFACT_LIN }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
