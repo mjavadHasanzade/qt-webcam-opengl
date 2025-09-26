@@ -14,8 +14,8 @@ on:
 
 env:
   QT_VERSION: 6.9
-  ARTIFACT_WIN: qt-planets-build-windows.zip
-  ARTIFACT_LIN: qt-planets-build-linux.zip
+  ARTIFACT_WIN: qt-webcam-build-windows.zip
+  ARTIFACT_LIN: qt-webcam-build-linux.zip
 
 jobs:
   build-windows:
