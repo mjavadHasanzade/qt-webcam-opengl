@@ -125,6 +125,20 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [build-windows, build-linux]
     steps:
+
+
+      - name: Create tag if missing
+        id: tag
+        run: |
+          git fetch --tags
+          TAG_NAME=$(git tag --points-at HEAD)
+          if [ -z "$TAG_NAME" ]; then
+            TAG_NAME="v$(date +'%Y.%m.%d.%H%M')"
+            git tag $TAG_NAME
+            git push origin $TAG_NAME
+          fi
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
@@ -140,6 +154,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ env.TAG_NAME }}
           files: |
             release_artifacts/${{ env.ARTIFACT_WIN }}
             release_artifacts/${{ env.ARTIFACT_LIN }}
@@ -147,4 +162,4 @@ jobs:
           prerelease: false
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT  }}
