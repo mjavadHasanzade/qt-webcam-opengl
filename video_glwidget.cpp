@@ -27,12 +27,10 @@ void VideoGLWidget::setFilterType(FilterType type)
 {
     if (filterType != type) {
         filterType = type;
-        if (filterType == Move) {
-            float t = timer.elapsed() / 1000.0f;
-            program->setUniformValue("time", t);
+        if (glInitialized) {
+            updateShader();
+            update();
         }
-        updateShader();
-        update();
     }
 }
 
@@ -40,6 +38,7 @@ void VideoGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
     glGenTextures(1, &textureId);
+    glInitialized = true;
     updateShader();
 }
 

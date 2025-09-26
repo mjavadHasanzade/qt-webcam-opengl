@@ -45,6 +45,7 @@ private:
     void updateShader();
     QElapsedTimer timer;
     QTimer frameUpdateTimer;
+    bool glInitialized = false;
 };
 
 #endif // VIDEOGLWIDGET_H

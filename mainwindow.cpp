@@ -13,6 +13,9 @@
 #include "video_glwidget.h"
 #include <QMenu>
 #include <QComboBox>
+#include <QScrollArea>
+#include <QEvent>
+#include <QMouseEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -28,23 +31,31 @@ MainWindow::MainWindow(QWidget *parent)
     }
     filtersComboBox = findChild<QComboBox*>("filtersComboBox");
     if (filtersComboBox) {
-        filtersComboBox->addItem("None");
-        filtersComboBox->addItem("Grayscale");
-        filtersComboBox->addItem("Sepia");
-        filtersComboBox->addItem("Invert");
-        filtersComboBox->addItem("Blur");
-        filtersComboBox->addItem("Edge");
-        filtersComboBox->addItem("Move");
-        filtersComboBox->addItem("Cool");
-        filtersComboBox->addItem("Emboss");
-        filtersComboBox->addItem("Posterize");
-        filtersComboBox->addItem("Warm");
-        filtersComboBox->addItem("Sharpen");
-        connect(filtersComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onFilterChanged);
-        filtersComboBox->setCurrentIndex(0);
+        filtersComboBox->hide();
     }
 
-    ui->videoLayout->addWidget(videoWidget);
+    // Build a vertical stack inside the left video area: main video on top, previews at bottom
+    mainColumnLayout = new QVBoxLayout();
+    mainColumnLayout->setContentsMargins(0, 0, 0, 0);
+    mainColumnLayout->setSpacing(6);
+    mainColumnLayout->addWidget(videoWidget, 1);
+
+    previewsLayout = new QHBoxLayout();
+    previewsLayout->setContentsMargins(6, 6, 6, 6);
+    previewsLayout->setSpacing(6);
+
+    QWidget *previewsContainer = new QWidget(this);
+    previewsContainer->setLayout(previewsLayout);
+
+    previewsScrollArea = new QScrollArea(this);
+    previewsScrollArea->setWidgetResizable(true);
+    previewsScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    previewsScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    previewsScrollArea->setFixedHeight(120);
+    previewsScrollArea->setWidget(previewsContainer);
+
+    mainColumnLayout->addWidget(previewsScrollArea, 0);
+    ui->videoLayout->addLayout(mainColumnLayout);
 
     cameraCapture = new CameraCapture(this);
     connect(cameraCapture, &CameraCapture::frameReady, videoWidget, &VideoGLWidget::setFrame);
@@ -52,6 +63,55 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Start with no filter
     videoWidget->setFilterType(VideoGLWidget::None);
+
+    struct FilterItem { VideoGLWidget::FilterType type; const char *name; };
+    const FilterItem items[] = {
+        { VideoGLWidget::None, "None" },
+        { VideoGLWidget::Grayscale, "Grayscale" },
+        { VideoGLWidget::Sepia, "Sepia" },
+        { VideoGLWidget::Invert, "Invert" },
+        { VideoGLWidget::Blur, "Blur" },
+        { VideoGLWidget::Edge, "Edge" },
+        { VideoGLWidget::Move, "Move" },
+        { VideoGLWidget::Cool, "Cool" },
+        { VideoGLWidget::Emboss, "Emboss" },
+        { VideoGLWidget::Posterize, "Posterize" },
+        { VideoGLWidget::Warm, "Warm" },
+        { VideoGLWidget::Sharpen, "Sharpen" },
+    };
+
+    for (const FilterItem &fi : items) {
+        QWidget *itemWrapper = new QWidget(this);
+        QVBoxLayout *itemLayout = new QVBoxLayout(itemWrapper);
+        itemLayout->setContentsMargins(2, 2, 2, 2);
+        itemLayout->setSpacing(2);
+
+        VideoGLWidget *preview = new VideoGLWidget(itemWrapper);
+        preview->setFixedSize(140, 90);
+        preview->setFilterType(fi.type);
+        preview->installEventFilter(this);
+        preview->setProperty("filterType", static_cast<int>(fi.type));
+
+        QLabel *label = new QLabel(QString::fromUtf8(fi.name), itemWrapper);
+        label->setAlignment(Qt::AlignHCenter);
+        label->setMinimumHeight(16);
+
+        itemLayout->addWidget(preview);
+        itemLayout->addWidget(label);
+        previewsLayout->addWidget(itemWrapper);
+        previewWidgets.append(preview);
+    }
+
+    // Feed scaled frames to previews for performance
+    if (cameraCapture) {
+        for (VideoGLWidget *preview : previewWidgets) {
+            connect(cameraCapture, &CameraCapture::frameReady, preview, [preview](const QImage &img){
+                if (img.isNull()) return;
+                QImage scaled = img.scaled(140, 90, Qt::KeepAspectRatio, Qt::FastTransformation);
+                preview->setFrame(scaled);
+            });
+        }
+    }
 }
 
 MainWindow::~MainWindow()
@@ -113,5 +173,22 @@ void MainWindow::onFilterChanged(int index)
         videoWidget->setFilterType(VideoGLWidget::Sharpen);
         break;
     }
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonPress) {
+        for (VideoGLWidget *preview : qAsConst(previewWidgets)) {
+            if (watched == preview) {
+                QVariant v = preview->property("filterType");
+                if (v.isValid()) {
+                    int t = v.toInt();
+                    videoWidget->setFilterType(static_cast<VideoGLWidget::FilterType>(t));
+                }
+                return true;
+            }
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
 }
 
