@@ -60,6 +60,11 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
       - name: Install Qt with MinGW
         uses: jurplel/install-qt-action@v4
         with:
@@ -75,6 +80,8 @@ jobs:
 
       - name: Build with MinGW
         working-directory: build
+        env:
+          PATH: ${{ env.PATH }};C:\mingw64\bin
         run: |
           qmake -r ../qt-webcam.pro
           mingw32-make -j4
